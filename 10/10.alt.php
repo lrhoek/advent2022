@@ -1,38 +1,51 @@
 <?php
 
 function init() {
-    $state["line"] = [];
-    $state["strength"] = [];
-    $state["x"] = [1];
+    $state["cycle"] = 0;
     $state["crt"] = array_fill(0, 40, '.');
+    $state["lines"] = [];
+    $state["strengths"] = [];
+    $state["x"] = 1;
 
     return $state;
 }
 
-function execute($state, $instruction) {
-    $deltas = array_map(intval(...), explode(" ", $instruction));
+function execute($state, $instructions) {
+    $deltas = array_map(intval(...), preg_split("/\s/ ", $instructions));
     return array_reduce($deltas, cycle(...), $state);
 }
 
 function cycle($state, $delta) {
-    $x = end($state["x"]);
-    $cycle = count($state["x"]);
-
-    $position = ($cycle - 1) % 40;
-    $strength = ($cycle - 20) % 40 === 0 ? [$cycle => $cycle * $x] : [];
-    $line = ($cycle + 1) % 40 === 0 ? [join("", $state["crt"])] : [];
-    $pixel = in_array($position, range($x - 1, $x + 1)) ? "#" : ".";
-
-    $state["crt"][$position] = $pixel;
-    $state["x"][] = $x + $delta;
-    array_push($state["strength"], ...$strength);
-    array_push($state["line"], ...$line);
+    $state["cycle"]++;
+    $state["crt"] = update_crt($state["crt"], $state["cycle"], $state["x"]);
+    $state["lines"] = add_line($state["lines"], $state["cycle"], $state["crt"]);
+    $state["strengths"] = add_strength($state["strengths"], $state["cycle"], $state["x"]);
+    $state["x"] += $delta;
 
     return $state;
 }
 
-$instructions = explode(PHP_EOL, file_get_contents('input'));
-$state = array_reduce($instructions, execute(...), init());
+function update_crt($crt, $cycle, $x) {
+    $position = ($cycle - 1) % 40;
+    $pixel = in_array($position, range($x - 1, $x + 1)) ? "#" : ".";
+    $crt[$position] = $pixel;
+    return $crt;
+}
 
-echo array_sum($state["strength"]).PHP_EOL;
-echo join(PHP_EOL, $state["line"]).PHP_EOL;
+function add_line($lines, $cycle, $crt) {
+    $line = $cycle % 40 === 0 ? [join("", $crt)] : [];
+    array_push($lines, ...$line);
+    return $lines;
+}
+
+function add_strength($strengths, $cycle, $x) {
+    $strength = ($cycle - 20) % 40 === 0 ? [$cycle => $cycle * $x] : [];
+    array_push($strengths, ...$strength);
+    return $strengths;
+}
+
+$instructions = file_get_contents('input');
+$state = execute(init(), $instructions);
+
+echo array_sum($state["strengths"]).PHP_EOL;
+echo join(PHP_EOL, $state["lines"]).PHP_EOL;
