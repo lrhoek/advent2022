@@ -2,9 +2,9 @@
 
 function init() {
     $state["cycle"] = 0;
+    $state["strengths"] = [];
     $state["crt"] = array_fill(0, 40, '.');
     $state["lines"] = [];
-    $state["strengths"] = [];
     $state["x"] = 1;
 
     return $state;
@@ -16,31 +16,36 @@ function execute($state, $instructions) {
 }
 
 function cycle($state, $delta) {
-    $state["cycle"]++;
-    $state["crt"] = update_crt($state["crt"], $state["cycle"], $state["x"]);
-    $state["lines"] = add_line($state["lines"], $state["cycle"], $state["crt"]);
-    $state["strengths"] = add_strength($state["strengths"], $state["cycle"], $state["x"]);
-    $state["x"] += $delta;
+    extract($state);
 
-    return $state;
+    $cycle++;
+    $strengths = add_strength($strengths, $cycle, $x);
+    $crt = update_crt($crt, $cycle, $x);
+    $lines = add_line($lines, $cycle, $crt);
+    $x += $delta;
+
+    return compact('x', 'cycle', 'strengths', 'crt', 'lines');
 }
 
 function update_crt($crt, $cycle, $x) {
     $position = ($cycle - 1) % 40;
     $pixel = in_array($position, range($x - 1, $x + 1)) ? "#" : ".";
     $crt[$position] = $pixel;
+
     return $crt;
 }
 
 function add_line($lines, $cycle, $crt) {
     $line = $cycle % 40 === 0 ? [join("", $crt)] : [];
     array_push($lines, ...$line);
+
     return $lines;
 }
 
 function add_strength($strengths, $cycle, $x) {
     $strength = ($cycle - 20) % 40 === 0 ? [$cycle => $cycle * $x] : [];
     array_push($strengths, ...$strength);
+
     return $strengths;
 }
 
